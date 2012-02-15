@@ -1,0 +1,19 @@
+reg.hs
+
+Colin Rothwell's Register Machine Interpreter
+
+Runs programs written for a Minksy style register machine. It should be started
+with a text file consisting of one instruction per line. Three instruction
+formats are supported, where R denotes a register (an arbitrary string: all
+registers are intialised to 0) and B denotes a branch (an integer instruction
+number to branch to).
+
+R+ B
+Adds 1 to R, and branches to B.
+
+R- B B'
+Subtracts 1 from R and branches to B if it is greater than 0. If it is equal to
+zero, it branches to B'.
+
+halt
+Case insensitive: halts execution of the program.
