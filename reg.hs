@@ -40,11 +40,12 @@ extractLabels p = (lm, unlines pl)
           transform lm _ [] = (lm, [])
           (lm, pl) = transform Map.empty 0 ls
 
-readBranch :: [String] -> Int -> ProgramCounter
-readBranch ss i = read $ ss !! i
+readBranch :: LabelMap -> [String] -> Int -> ProgramCounter
+readBranch lm ss i = Map.findWithDefault (read lbl) lbl lm
+    where lbl = ss !! i
 
-parseInstruction :: String -> Instruction
-parseInstruction s 
+parseInstruction :: LabelMap -> String -> Instruction
+parseInstruction lm s 
     | op == '+' = Add reg (b 1)
     | op == '-' = Sub reg (b 1) (b 2)
     | lf == "halt" = Halt
@@ -52,13 +53,14 @@ parseInstruction s
     where parts = words s
           f = head parts
           lf = map toLower f
-          b = readBranch parts
+          b = readBranch lm parts
           reg = init f
           op = last f
 
 parseProgram :: String -> Program
 parseProgram s = Array.listArray (0, length il - 1) il
-    where il = map parseInstruction (lines s)
+    where (lm, s') = extractLabels s
+          il = map (parseInstruction lm) (lines s')
         
 execute :: Store -> Instruction -> State
 execute _ Halt = Stop
@@ -79,5 +81,4 @@ main =
     in getArgs >>= 
        return . head >>=
        readFile >>= 
-       {-\x -> print $ run (parseProgram x) s 0 Map.! "R0"-}
-       \x -> print $ extractLabels x
+       \x -> print $ run (parseProgram x) s 0 Map.! "R0"
