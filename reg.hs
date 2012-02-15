@@ -20,25 +20,44 @@ data State = Continue Store ProgramCounter
 
 type LabelMap = Map.Map String ProgramCounter
 
+{-extractLabels :: String -> (LabelMap, String)-}
+{-extractLabels p = (lm, unlines pl)-}
+    {-where ls = lines p-}
+          {-extractLabel :: LabelMap -> ProgramCounter -> String -> (LabelMap, String)-}
+          {-extractLabel lm pc isn-}
+              {-| islbl = (Map.insert lbl pc lm, isn')-}
+              {-| otherwise = (lm, isn)-}
+              {-where wi = words isn-}
+                    {-cl = head wi-}
+                    {-islbl = (last cl == ':')-}
+                    {-lbl = init cl-}
+                    {-isn' = unwords $ tail wi-}
+          {-transform :: LabelMap -> ProgramCounter -> [String] -> (LabelMap, [String])-}
+          {-transform lm pc (i:is) = (lm'', il') -}
+              {-where (lm', i') = extractLabel lm pc i-}
+                    {-(lm'', is') = transform lm' (pc + 1) is-}
+                    {-il' = i' : is'-}
+          {-transform lm _ [] = (lm, [])-}
+          {-(lm, pl) = transform Map.empty 0 ls-}
+
 extractLabels :: String -> (LabelMap, String)
-extractLabels p = (lm, unlines pl)
-    where ls = lines p
-          extractLabel :: LabelMap -> ProgramCounter -> String -> (LabelMap, String)
-          extractLabel lm pc isn
-              | islbl = (Map.insert lbl pc lm, isn')
-              | otherwise = (lm, isn)
-              where wi = words isn
-                    cl = head wi
-                    islbl = (last cl == ':')
-                    lbl = init cl
-                    isn' = unwords $ tail wi
-          transform :: LabelMap -> ProgramCounter -> [String] -> (LabelMap, [String])
-          transform lm pc (i:is) = (lm'', il') 
-              where (lm', i') = extractLabel lm pc i
-                    (lm'', is') = transform lm' (pc + 1) is
-                    il' = i' : is'
-          transform lm _ [] = (lm, [])
-          (lm, pl) = transform Map.empty 0 ls
+extractLabels p = (rdlbls pl Map.empty 0, unlines $ rmlbls pl)
+    where pl = lines p
+          rdlbls :: [String] -> LabelMap -> ProgramCounter -> LabelMap
+          rdlbls (l:ls) lm pc
+            | islbl = rdlbls ls (Map.insert lbl pc lm) (pc + 1)
+            | otherwise = rdlbls ls lm (pc + 1)
+            where candlbl = head $ words l
+                  islbl = last candlbl == ':'
+                  lbl = init candlbl
+          rdlbls [] lm _ = lm
+          rmlbls :: [String] -> [String]
+          rmlbls (l : ls)
+              | islbl = (unwords $ tail wl) : (rmlbls ls)
+              | otherwise = l : (rmlbls ls)
+              where wl = words l
+                    islbl = (last $ head wl) == ':'
+          rmlbls [] = []
 
 readBranch :: LabelMap -> [String] -> Int -> ProgramCounter
 readBranch lm ss i = Map.findWithDefault (read lbl) lbl lm
