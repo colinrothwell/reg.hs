@@ -7,15 +7,19 @@ import Debug.Trace (trace)
 type Register = String
 type ProgramCounter = Int
 
+data Branch = NextLine
+            | Line ProgramCounter
+            deriving (Show)
+
 data Instruction = Halt 
-                 | Add Register ProgramCounter
-                 | Sub Register ProgramCounter ProgramCounter
+                 | Add Register Branch
+                 | Sub Register Branch Branch
                  deriving (Show)
 
 type Program = Array.Array ProgramCounter Instruction
 type Store = Map.Map Register Integer
 
-data State = Continue Store ProgramCounter
+data State = Continue Store Branch
            | Stop
 
 type LabelMap = Map.Map String ProgramCounter
@@ -32,29 +36,37 @@ extractLabels p = (rdlbls pl Map.empty 0, unlines $ rmlbls pl)
                   lbl = init candlbl
           rdlbls [] lm _ = lm
           rmlbls :: [String] -> [String]
-          rmlbls (l : ls)
+          rmlbls (l:ls)
               | islbl = (unwords $ tail wl) : (rmlbls ls)
               | otherwise = l : (rmlbls ls)
               where wl = words l
                     islbl = (last $ head wl) == ':'
           rmlbls [] = []
 
-readBranch :: LabelMap -> [String] -> Int -> ProgramCounter
-readBranch lm ss i = Map.findWithDefault (read lbl) lbl lm
-    where lbl = ss !! i
+readBranch :: LabelMap -> String -> Branch
+readBranch lm lbl = Line $ Map.findWithDefault (read lbl) lbl lm
 
 parseInstruction :: LabelMap -> String -> Instruction
 parseInstruction lm s 
-    | op == '+' = Add reg (b 1)
-    | op == '-' = Sub reg (b 1) (b 2)
+    | op == '+' = buildAdd reg bs
+    | op == '-' = buildSub reg bs
     | lf == "halt" = Halt
     | otherwise = error $ "Invalid Instruction Format " ++ s
     where parts = words s
+          bs = map (readBranch lm) $ tail parts
+          nb = length bs
           f = head parts
           lf = map toLower f
-          b = readBranch lm parts
           reg = init f
           op = last f
+          buildAdd :: String -> [Branch] -> Instruction
+          buildAdd reg bs
+            | nb == 0 = Add reg NextLine
+            | otherwise = Add reg (bs !! 0)
+          buildSub :: String -> [Branch] -> Instruction
+          buildSub reg bs
+            | nb == 1 = Sub reg NextLine (bs !! 0)
+            | otherwise = Sub reg (bs !! 0) (bs !! 1)
 
 parseProgram :: String -> Program
 parseProgram s = Array.listArray (0, length il - 1) il
@@ -68,15 +80,19 @@ execute s (Sub r pcnb pcb)
     | (s Map.! r) == 0 = Continue s pcb
     | otherwise = Continue (Map.insert r (Map.findWithDefault 0 r s - 1) s) pcnb
 
+nextPC :: ProgramCounter -> Branch -> ProgramCounter
+nextPC _ (Line n) = n
+nextPC pc NextLine = pc + 1
+
 run :: Program -> Store -> ProgramCounter -> Store
 run prog store pc =
     case ns of Stop -> store
-               (Continue s' pc') -> run prog s' pc'
+               (Continue s' b) -> run prog s' (nextPC pc b)
     where ins = prog Array.! pc
           ns = execute store ins
 
 main = 
-    let s = Map.fromList [("R0", 0), ("R1", 5), ("R2", 10)]
+    let s = Map.fromList [("R1", 10)]
     in getArgs >>= 
        return . head >>=
        readFile >>= 
