@@ -91,9 +91,23 @@ run prog store pc =
     where ins = prog Array.! pc
           ns = execute store ins
 
-main = 
-    let s = Map.fromList [("R1", 10)]
-    in getArgs >>= 
-       return . head >>=
-       readFile >>= 
-       \x -> print $ run (parseProgram x) s 0 Map.! "R0"
+parseArgs :: [String] -> ([Register], [(Register, Integer)])
+parseArgs [] = ([], [])
+parseArgs (a : as)
+    | isi = let (r, v) = break (== '=') a in (os, (r, read $ tail v) : is)
+    | otherwise = (a : os, is)
+    where pr = parseArgs as
+          os = fst pr
+          is = snd pr
+          isi = '=' `elem` a
+
+getValues :: Store -> [Register] -> [String]
+getValues s [] = []
+getValues s (r : rs) = (r ++ " = " ++ show (s Map.! r)) : getValues s rs
+
+main = do
+    args <- getArgs
+    prog <- readFile $ head args
+    let (os, is) = parseArgs $ tail args
+     in putStr $ unlines $ getValues (run (parseProgram prog) (Map.fromList is) 0) os
+    
