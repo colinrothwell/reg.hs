@@ -105,9 +105,9 @@ getValues :: Store -> [Register] -> [String]
 getValues s [] = []
 getValues s (r : rs) = (r ++ " = " ++ show (s Map.! r)) : getValues s rs
 
-main = do
-    args <- getArgs
-    prog <- readFile $ head args
-    let (os, is) = parseArgs $ tail args
-     in putStr $ unlines $ getValues (run (parseProgram prog) (Map.fromList is) 0) os
-    
+main =
+    getArgs >>=
+    \args -> readFile (head args) >>=
+    \prog -> let (os, is) = parseArgs $ tail args
+             in putStr $ unlines $ 
+                getValues (run (parseProgram prog) (Map.fromList is) 0) os
