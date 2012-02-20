@@ -4,6 +4,14 @@ reg.hs
 Colin Rothwell's Register Machine Interpreter
 ---------------------------------------------
 
+### Building
+
+You should just need GHC. I've tested it with 7.03, YMMV. You just need to do:
+
+`ghc reg.hs`
+
+And the `reg` executable will appear in the pwd.
+
 ### Running
 
 `./reg <file> <registers>`
