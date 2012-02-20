@@ -4,6 +4,16 @@ reg.hs
 Colin Rothwell's Register Machine Interpreter
 ---------------------------------------------
 
+### Running
+
+`./reg <file> <registers>`
+
+Where file is a register machine program, and registers is a list of register
+names to output, and initial register values in the form `<name>=<value`. There
+shouldn't be a space between name, =, and value.
+
+### File Syntax
+
 Runs programs written for a Minksy style register machine. It should be started
 with a text file consisting of one instruction per line. 
 
